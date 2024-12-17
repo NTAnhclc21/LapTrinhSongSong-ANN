@@ -2,8 +2,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "../include/mnist_file.h"
-#include "../include/neural_network.h"
+#include "mnist_file.h"
+#include "neural_network.h"
 
 // Convert a pixel value from 0-255 to one from 0 to 1
 #define PIXEL_SCALE(x) (((float) (x)) / 255.0f)
@@ -52,7 +52,11 @@ void neural_network_random_weights(neural_network_t * network) {
     }
 }
 
-// Softmax function (same as before)
+/**
+ * Calculate the softmax vector from the activations. This uses a more
+ * numerically stable algorithm that normalises the activations to prevent
+ * large exponents.
+ */
 void neural_network_softmax(float * activations, int length) {
     int i;
     float sum, max;
@@ -73,8 +77,11 @@ void neural_network_softmax(float * activations, int length) {
     }
 }
 
-// Forward propagation through the network
-void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network, float activations[MNIST_LABELS]) {
+/**
+ * Use the weights and bias vector to forward propogate through the neural
+ * network and calculate the activations for an input.
+ */
+void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network, float activations[OUTPUT_LAYER_SIZE]) {
     float layer1_activations[HIDDEN_LAYER1_SIZE];
     float layer2_activations[HIDDEN_LAYER2_SIZE];
     int i, j;
@@ -108,7 +115,12 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     neural_network_softmax(activations, OUTPUT_LAYER_SIZE);
 }
 
-// Gradient descent and update
+/**
+ * Update the gradients for this step of gradient descent using the gradient
+ * contributions from a single training example (image).
+ * 
+ * This function returns the loss contribution from this training example.
+ */
 float neural_network_gradient_update(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label) {
     float layer1_activations[HIDDEN_LAYER1_SIZE];
     float layer2_activations[HIDDEN_LAYER2_SIZE];
@@ -151,6 +163,10 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     }
 
     // Gradient calculation for output layer
+    /**
+     * When using softmax activation at the output layer with the cross-entropy loss,
+     * the gradient computation simplifies.
+     */
     for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
         for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
             gradient->W3_grad[i][j] += output_errors[i] * layer2_activations[j];
@@ -193,42 +209,5 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     }
 
     // Cross-entropy loss for the output
-    return 0.0f - log(output_activations[label]);
-}
-
-// Training step remains largely the same, but with updated gradient descent
-float neural_network_training_step(mnist_dataset_t * dataset, neural_network_t * network, float learning_rate) {
-    neural_network_gradient_t gradient;
-    float total_loss;
-    int i, j;
-
-    memset(&gradient, 0, sizeof(neural_network_gradient_t));
-
-    for (i = 0, total_loss = 0; i < dataset->size; i++) {
-        total_loss += neural_network_gradient_update(&dataset->images[i], network, &gradient, dataset->labels[i]);
-    }
-
-    // Update weights and biases
-    for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
-        network->b1[i] -= learning_rate * gradient.b1_grad[i] / dataset->size;
-        for (j = 0; j < INPUT_LAYER_SIZE; j++) {
-            network->W1[i][j] -= learning_rate * gradient.W1_grad[i][j] / dataset->size;
-        }
-    }
-
-    for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
-        network->b2[i] -= learning_rate * gradient.b2_grad[i] / dataset->size;
-        for (j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
-            network->W2[i][j] -= learning_rate * gradient.W2_grad[i][j] / dataset->size;
-        }
-    }
-
-    for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        network->b3[i] -= learning_rate * gradient.b3_grad[i] / dataset->size;
-        for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
-            network->W3[i][j] -= learning_rate * gradient.W3_grad[i][j] / dataset->size;
-        }
-    }
-
-    return total_loss;
+    return 0.0f - log(output_activations[label]);  // The "0.0f" convert the returned value from double to float (32-bit value)
 }

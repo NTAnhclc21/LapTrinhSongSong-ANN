@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../include/mnist_file.h"
+#include "mnist_file.h"
 
 /**
  * Convert from the big endian format in the dataset if we're on a little endian
@@ -181,11 +181,11 @@ void mnist_free_dataset(mnist_dataset_t * dataset)
 /**
  * Fills the batch dataset with a subset of the parent dataset.
  */
-int mnist_batch(mnist_dataset_t * dataset, mnist_dataset_t * batch, int size, int number)
+int mnist_batch(mnist_dataset_t * dataset, mnist_dataset_t * batch, int batch_size, int starting_batch)
 {
     int start_offset;
 
-    start_offset = size * number;
+    start_offset = batch_size * starting_batch;
 
     if (start_offset >= dataset->size) {
         return 0;
@@ -193,7 +193,7 @@ int mnist_batch(mnist_dataset_t * dataset, mnist_dataset_t * batch, int size, in
 
     batch->images = &dataset->images[start_offset];
     batch->labels = &dataset->labels[start_offset];
-    batch->size = size;
+    batch->size = batch_size;
 
     if (start_offset + batch->size > dataset->size) {
         batch->size = dataset->size - start_offset;
