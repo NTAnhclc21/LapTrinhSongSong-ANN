@@ -2,10 +2,13 @@
 #include <string.h>
 #include <math.h>
 
-#include "include/mnist_file.h"
-#include "include/neural_network.h"
+#include "../include/mnist_file.h"
+#include "../include/neural_network.h"
 
+// Convert a pixel value from 0-255 to one from 0 to 1
 #define PIXEL_SCALE(x) (((float) (x)) / 255.0f)
+
+// Returns a random value between 0 and 1
 #define RAND_FLOAT() (((float) rand()) / ((float) RAND_MAX))
 
 // ReLU Activation Function
@@ -18,7 +21,9 @@ float neural_network_relu_derivative(float x) {
     return x > 0 ? 1.0f : 0.0f;
 }
 
-// Initialize weights randomly
+/**
+ * Initialise the weights and bias vectors with values between 0 and 1
+ */
 void neural_network_random_weights(neural_network_t * network) {
     int i, j;
 

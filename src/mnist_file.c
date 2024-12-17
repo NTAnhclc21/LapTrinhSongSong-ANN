@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "include/mnist_file.h"
+#include "../include/mnist_file.h"
 
 /**
  * Convert from the big endian format in the dataset if we're on a little endian
@@ -60,7 +60,7 @@ uint8_t * get_labels(const char * path, uint32_t * number_of_labels)
         return NULL;
     }
 
-    if (*number_of_labels != fread(labels, 1, *number_of_labels, stream)) {
+    if (*number_of_labels != fread(labels, sizeof(uint8_t), *number_of_labels, stream)) {
         fprintf(stderr, "Could not read %d labels from: %s\n", *number_of_labels, path);
         free(labels);
         fclose(stream);

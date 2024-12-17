@@ -8,12 +8,18 @@
 #define HIDDEN_LAYER2_SIZE 128              // Second hidden layer
 #define OUTPUT_LAYER_SIZE MNIST_LABELS      // 10 output nodes
 
+
+
+// --------------------------------------------
 // Activation function types
 typedef enum {
     ACTIVATION_RELU,
     ACTIVATION_SIGMOID,
     ACTIVATION_TANH
 } activation_type;
+// --------------------------------------------
+
+
 
 typedef struct {
     float W1[HIDDEN_LAYER1_SIZE][INPUT_LAYER_SIZE];
