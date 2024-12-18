@@ -28,7 +28,6 @@ typedef struct {
 void neural_network_random_weights(neural_network_t * network);
 void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network, float activations[OUTPUT_LAYER_SIZE]);
 float neural_network_gradient_update(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label);
-
 float neural_network_training_step(mnist_dataset_t * dataset, neural_network_t * network, float learning_rate);
 float calculate_accuracy(mnist_dataset_t * dataset, neural_network_t * network);
 
