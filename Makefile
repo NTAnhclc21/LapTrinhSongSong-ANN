@@ -18,11 +18,11 @@ GPU_SRCS = src/main.c src/cuda_kernels.cu src/mnist_file.c src/neural_network.c
 
 # Build CPU version
 main_cpu: $(CPU_SRCS)
-    $(CC) -o $(CPU_TARGET) $(CPU_SRCS) $(CFLAGS) $(LDFLAGS)
+  $(CC) -o $(CPU_TARGET) $(CPU_SRCS) $(CFLAGS) $(LDFLAGS)
 
 # Build GPU version V0
 main_gpu_v0: $(GPU_SRCS)
-    $(NVCC) -arch=$(ARCH) -DUSE_GPU_V0 -o $(GPU_TARGET_V0) $(GPU_SRCS) $(CFLAGS) -lcudart
+  $(NVCC) -arch=$(ARCH) -DUSE_GPU_V0 -o $(GPU_TARGET_V0) $(GPU_SRCS) $(CFLAGS) -lcudart
 
 # # Build GPU version V1
 # main_gpu_v1: $(GPU_SRCS)
@@ -34,4 +34,4 @@ main_gpu_v0: $(GPU_SRCS)
 
 # Clean up build artifacts
 clean:
-    rm -f $(CPU_TARGET) $(GPU_TARGET_V0) $(GPU_TARGET_V1) $(GPU_TARGET_V2)
+  rm -f $(CPU_TARGET) $(GPU_TARGET_V0)
