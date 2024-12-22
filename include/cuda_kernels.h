@@ -1,8 +1,6 @@
 #ifndef CUDA_KERNELS_H
 #define CUDA_KERNELS_H
 
-#include <cuda_runtime.h>
-
 // Matrix-vector multiplication: out = W * x + b
 __global__ void matvec_mult(float *W, float *x, float *b, float *out, int rows, int cols);
 

@@ -1,7 +1,10 @@
 #ifndef NEURAL_NETWORK_H_
 #define NEURAL_NETWORK_H_
 
+#include <stdint.h>
+
 #include "hyperparameters.h"
+#include "mnist_file.h"
 
 typedef struct {
     float W1[HIDDEN_LAYER1_SIZE][INPUT_LAYER_SIZE];
@@ -25,18 +28,11 @@ typedef struct {
     float b3_grad[OUTPUT_LAYER_SIZE];
 } neural_network_gradient_t;
 
-// CPU
 void neural_network_random_weights(neural_network_t * network);
 void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network, float activations[OUTPUT_LAYER_SIZE]);
 float neural_network_gradient_update(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label);
 float neural_network_training_step(mnist_dataset_t * dataset, neural_network_t * network, float learning_rate);
 
-// Testing
 float calculate_accuracy(mnist_dataset_t * dataset, neural_network_t * network);
-
-// GPU
-void neural_network_hypothesis_gpu_v0(mnist_image_t * image, neural_network_t * network, float activations[OUTPUT_LAYER_SIZE]);
-float neural_network_gradient_update_gpu_v0(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label);
-float neural_network_training_step_gpu_v0(mnist_dataset_t * dataset, neural_network_t * network, float learning_rate);
 
 #endif
