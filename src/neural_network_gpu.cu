@@ -230,12 +230,12 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     CHECK(cudaGetLastError());
 
     // Copy gradients back to host
-    CHECK(cudaMemcpy(temp_grad, d_W1_grad, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(temp_grad, d_W2_grad, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(temp_grad, d_W3_grad, OUTPUT_LAYER_SIZE * HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(temp_grad, d_b1_grad, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(temp_grad, d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(temp_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.W1_grad, d_W1_grad, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.W2_grad, d_W2_grad, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.W3_grad, d_W3_grad, OUTPUT_LAYER_SIZE * HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.b1_grad, d_b1_grad, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.b2_grad, d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(temp_grad.b3_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     gradient->W1_grad += temp_grad.W1_grad;
     gradient->W2_grad += temp_grad.W2_grad;
     gradient->W3_grad += temp_grad.W3_grad;

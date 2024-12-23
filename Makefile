@@ -14,7 +14,7 @@ GPU_TARGET_V0 = bin/main_gpu_v0
 
 # Source files
 CPU_SRCS = src/main.c src/mnist_file.c src/neural_network_cpu.c
-GPU_V0_SRCS = src/main.c src/cuda_kernels.cu src/mnist_file.c src/neural_network_gpu.cu
+GPU_V0_SRCS = src/main.cu src/cuda_kernels.cu src/mnist_file.cu src/neural_network_gpu.cu
 
 # Build CPU version
 main_cpu: $(CPU_SRCS)
