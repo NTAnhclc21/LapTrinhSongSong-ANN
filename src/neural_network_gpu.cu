@@ -118,6 +118,30 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     CHECK(cudaFree(d_output_activations));
 }
 
+float neural_network_relu(float x) {
+    return x > 0 ? x : 0;
+}
+
+void neural_network_softmax(float * activations, int length) {
+    int i;
+    float sum, max;
+
+    for (i = 1, max = activations[0]; i < length; i++) {
+        if (activations[i] > max) {
+            max = activations[i];
+        }
+    }
+
+    for (i = 0, sum = 0; i < length; i++) {
+        activations[i] = exp(activations[i] - max);
+        sum += activations[i];
+    }
+
+    for (i = 0; i < length; i++) {
+        activations[i] /= sum;
+    }
+}
+
 /**
  * Update the gradients for this step of gradient descent using the gradient
  * contributions from a single training example (image).
@@ -130,8 +154,9 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     float *d_layer2_errors, *d_layer1_errors, *d_output_errors;
     float *d_W1_grad, *d_W2_grad, *d_W3_grad, *d_b1_grad, *d_b2_grad, *d_b3_grad;
     
+    float layer1_activations[HIDDEN_LAYER1_SIZE];
+    float layer2_activations[HIDDEN_LAYER2_SIZE];
     float output_activations[OUTPUT_LAYER_SIZE];
-    memset(output_activations, 0, sizeof(float) * OUTPUT_LAYER_SIZE);
 
     // Scale input pixels
     float scaled_pixels[INPUT_LAYER_SIZE];
@@ -175,43 +200,80 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     CHECK(cudaMemcpy(d_b2_grad, gradient->b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_b3_grad, gradient->b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice));
 
-    // Launch CUDA kernels for forward pass
-    dim3 blockDim(128);
-    dim3 gridDim1((HIDDEN_LAYER1_SIZE + blockDim.x - 1) / blockDim.x);
-    dim3 gridDim2((HIDDEN_LAYER2_SIZE + blockDim.x - 1) / blockDim.x);
-    dim3 gridDim3((OUTPUT_LAYER_SIZE + blockDim.x - 1) / blockDim.x);
+    // // Launch CUDA kernels for forward pass
+    // dim3 blockDim(128);
+    // dim3 gridDim1((HIDDEN_LAYER1_SIZE + blockDim.x - 1) / blockDim.x);
+    // dim3 gridDim2((HIDDEN_LAYER2_SIZE + blockDim.x - 1) / blockDim.x);
+    // dim3 gridDim3((OUTPUT_LAYER_SIZE + blockDim.x - 1) / blockDim.x);
 
-    matvec_mult<<<gridDim1, blockDim>>>(d_W1, d_input, d_b1, d_layer1_activations, HIDDEN_LAYER1_SIZE, INPUT_LAYER_SIZE);
-    cudaDeviceSynchronize();
-    relu_activation<<<gridDim1, blockDim>>>(d_layer1_activations, HIDDEN_LAYER1_SIZE);
-    cudaDeviceSynchronize();
-    CHECK(cudaGetLastError());
+    // matvec_mult<<<gridDim1, blockDim>>>(d_W1, d_input, d_b1, d_layer1_activations, HIDDEN_LAYER1_SIZE, INPUT_LAYER_SIZE);
+    // cudaDeviceSynchronize();
+    // relu_activation<<<gridDim1, blockDim>>>(d_layer1_activations, HIDDEN_LAYER1_SIZE);
+    // cudaDeviceSynchronize();
+    // CHECK(cudaGetLastError());
 
-    matvec_mult<<<gridDim2, blockDim>>>(d_W2, d_layer1_activations, d_b2, d_layer2_activations, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
-    cudaDeviceSynchronize();
-    relu_activation<<<gridDim2, blockDim>>>(d_layer2_activations, HIDDEN_LAYER2_SIZE);
-    cudaDeviceSynchronize();
-    CHECK(cudaGetLastError());
+    // matvec_mult<<<gridDim2, blockDim>>>(d_W2, d_layer1_activations, d_b2, d_layer2_activations, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
+    // cudaDeviceSynchronize();
+    // relu_activation<<<gridDim2, blockDim>>>(d_layer2_activations, HIDDEN_LAYER2_SIZE);
+    // cudaDeviceSynchronize();
+    // CHECK(cudaGetLastError());
 
-    matvec_mult<<<gridDim3, blockDim>>>(d_W3, d_layer2_activations, d_b3, d_output_activations, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
-    cudaDeviceSynchronize();
-    CHECK(cudaGetLastError());
-    softmax_activation<<<1, blockDim>>>(d_output_activations, d_output_activations, OUTPUT_LAYER_SIZE);
-    cudaDeviceSynchronize();
-    CHECK(cudaGetLastError());
+    // matvec_mult<<<gridDim3, blockDim>>>(d_W3, d_layer2_activations, d_b3, d_output_activations, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
+    // cudaDeviceSynchronize();
+    // CHECK(cudaGetLastError());
+    // // softmax_activation<<<1, blockDim>>>(d_output_activations, d_output_activations, OUTPUT_LAYER_SIZE);
+    // // cudaDeviceSynchronize();
+    // // CHECK(cudaGetLastError());
 
-    // Copy output activations back to host
-    CHECK(cudaMemcpy(output_activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    printf("output_activations[0]: %f\n", output_activations[0]);
+    // // Copy output activations back to host
+    // CHECK(cudaMemcpy(output_activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    // neural_network_softmax(output_activations, OUTPUT_LAYER_SIZE);
+    // CHECK(cudaMemcpy(d_output_activations, output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+    
+    // float layer1_activations[HIDDEN_LAYER1_SIZE];
+    // CHECK(cudaMemcpy(layer1_activations, d_layer1_activations, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    // printf("layer1_activations[0]: %f\n", layer1_activations[0]);
+
+
+
+    // Forward pass (similar to hypothesis function)
+    for (int i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
+        layer1_activations[i] = network->b1[i];
+        for (int j = 0; j < INPUT_LAYER_SIZE; j++) {
+            layer1_activations[i] += network->W1[i][j] * PIXEL_SCALE(image->pixels[j]);
+        }
+    }
+    for (int i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
+        layer1_activations[i] = neural_network_relu(layer1_activations[i]);
+    }
+    for (int i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
+        layer2_activations[i] = network->b2[i];
+        for (int j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
+            layer2_activations[i] += network->W2[i][j] * layer1_activations[j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
+        layer2_activations[i] = neural_network_relu(layer2_activations[i]);
+    }
+    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
+        output_activations[i] = network->b3[i];
+        for (int j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
+            output_activations[i] += network->W3[i][j] * layer2_activations[j];
+        }
+    }
+    neural_network_softmax(output_activations, OUTPUT_LAYER_SIZE);
+    CHECK(cudaMemcpy(d_output_activations, output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_layer1_activations, layer1_activations, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_layer2_activations, layer2_activations, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyHostToDevice));
+
+
+
 
     // Backpropagation
     // Output layer error
     compute_output_layer_error<<<gridDim3, blockDim>>>(d_output_activations, d_output_errors, label, OUTPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
-    float output_error[OUTPUT_LAYER_SIZE];
-    CHECK(cudaMemcpy(output_error, d_output_errors, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    printf("output_error[0]: %f\n", output_error[0]);
 
     // Hidden layer 2 error
     compute_hidden_layer_error<<<gridDim2, blockDim>>>(d_output_errors, d_W3, d_layer2_activations, d_layer2_errors, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
@@ -222,6 +284,9 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     compute_hidden_layer_error<<<gridDim1, blockDim>>>(d_layer2_errors, d_W2, d_layer1_activations, d_layer1_errors, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
+    float layer1_error[HIDDEN_LAYER1_SIZE];
+    CHECK(cudaMemcpy(layer1_error, d_layer1_errors, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    printf("layer1_error[0]: %f\n", layer1_error[0]);
 
     // Accumulate gradients for output layer
     accumulate_gradients<<<gridDim3, blockDim>>>(d_W3, d_b3, d_output_errors, d_layer2_activations, d_W3_grad, d_b3_grad, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
@@ -245,7 +310,8 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     CHECK(cudaMemcpy(gradient->b1_grad, d_b1_grad, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(gradient->b2_grad, d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(gradient->b3_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    printf("gradient->b3_grad[0]: %f\n", gradient->b3_grad[0]);
+    printf("gradient->b1_grad[0]: %f\n", gradient->b1_grad[0]);
+    printf("gradient->W1_grad[0][0]: %f\n", gradient->W1_grad[0][0]);
 
     // Free device memory
     CHECK(cudaFree(d_W1));
@@ -291,6 +357,23 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
         total_loss += neural_network_gradient_update(&batch->images[i], network, &gradient, batch->labels[i]);
     }
 
+    // Calculate and print the average gradient of W1_grad and b1_grad
+    float avg_W1_grad = 0.0f;
+    float avg_b1_grad = 0.0f;
+
+    for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
+        avg_b1_grad += gradient.b1_grad[i];
+        for (j = 0; j < INPUT_LAYER_SIZE; j++) {
+            avg_W1_grad += gradient.W1_grad[i][j];
+        }
+    }
+
+    avg_b1_grad /= HIDDEN_LAYER1_SIZE;
+    avg_W1_grad /= (HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE);
+
+    printf("Average W1_grad: %f\n", avg_W1_grad);
+    printf("Average b1_grad: %f\n", avg_b1_grad);
+
     // Update weights and biases
     for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         network->b1[i] -= learning_rate * gradient.b1_grad[i] / batch->size;
@@ -298,6 +381,7 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W1[i][j] -= learning_rate * gradient.W1_grad[i][j] / batch->size;
         }
     }
+    printf("b1[0] changes: %f\n", learning_rate * gradient.b1_grad[0] / batch->size);
 
     for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
         network->b2[i] -= learning_rate * gradient.b2_grad[i] / batch->size;
@@ -305,6 +389,7 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W2[i][j] -= learning_rate * gradient.W2_grad[i][j] / batch->size;
         }
     }
+    printf("b2[0] changes: %f\n", learning_rate * gradient.b2_grad[0] / batch->size);
 
     for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
         network->b3[i] -= learning_rate * gradient.b3_grad[i] / batch->size;
@@ -312,6 +397,7 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W3[i][j] -= learning_rate * gradient.W3_grad[i][j] / batch->size;
         }
     }
+    printf("b3[0] changes: %f\n", learning_rate * gradient.b3_grad[0] / batch->size);
     
     return total_loss;
 }
@@ -321,7 +407,7 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
  */
 float calculate_accuracy(mnist_dataset_t * dataset, neural_network_t * network)
 {
-    float activations[MNIST_LABELS], max_activation;
+    float activations[OUTPUT_LAYER_SIZE], max_activation;
     int i, j, correct, predict;
 
     // Loop through the dataset
