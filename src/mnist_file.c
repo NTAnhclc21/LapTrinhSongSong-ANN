@@ -52,7 +52,7 @@ uint8_t * get_labels(const char * path, uint32_t * number_of_labels)
 
     *number_of_labels = header.number_of_labels;
 
-    labels = malloc(*number_of_labels * sizeof(uint8_t));
+    labels = (uint8_t *)malloc(*number_of_labels * sizeof(uint8_t));
 
     if (labels == NULL) {
         fprintf(stderr, "Could not allocated memory for %d labels\n", *number_of_labels);
@@ -111,7 +111,7 @@ mnist_image_t * get_images(const char * path, uint32_t * number_of_images)
     }
 
     *number_of_images = header.number_of_images;
-    images = malloc(*number_of_images * sizeof(mnist_image_t));
+    images = (mnist_image_t *)malloc(*number_of_images * sizeof(mnist_image_t));
 
     if (images == NULL) {
         fprintf(stderr, "Could not allocated memory for %d images\n", *number_of_images);
@@ -136,7 +136,7 @@ mnist_dataset_t * mnist_get_dataset(const char * image_path, const char * label_
     mnist_dataset_t * dataset;
     uint32_t number_of_images, number_of_labels;
 
-    dataset = calloc(1, sizeof(mnist_dataset_t));
+    dataset = (mnist_dataset_t *)calloc(1, sizeof(mnist_dataset_t));
 
     if (NULL == dataset) {
         return NULL;
