@@ -39,45 +39,52 @@ __global__ void softmax_activation(float *input, float *output, int size) {
     __shared__ float shared_sum[128];
     
     int tid = threadIdx.x;
-    
-    // Find max for numerical stability
+
+    // Initialize shared memory
+    shared_max[tid] = -FLT_MAX;
+    shared_sum[tid] = 0.0f;
+    __syncthreads();
+
     float local_max = -FLT_MAX;
+    
+    // Find max value
     for (int i = tid; i < size; i += blockDim.x) {
         local_max = fmaxf(local_max, input[i]);
     }
     shared_max[tid] = local_max;
     __syncthreads();
     
+    // Reduce to find global max
     for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
         if (tid < stride) {
             shared_max[tid] = fmaxf(shared_max[tid], shared_max[tid + stride]);
-        }
+        }            
         __syncthreads();
     }
     float max_val = shared_max[0];
     __syncthreads();
-
-    // Compute exp(x - max) for stability
+    
+    // Compute sum of exponentials
     float local_sum = 0.0f;
     for (int i = tid; i < size; i += blockDim.x) {
-        float val = expf(input[i] - max_val);
-        output[i] = val;  // Store intermediate result
-        local_sum += val;
+        local_sum += expf(input[i] - max_val);
     }
     shared_sum[tid] = local_sum;
     __syncthreads();
     
+    // Reduce to find total sum
     for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
         if (tid < stride) {
             shared_sum[tid] += shared_sum[tid + stride];
         }
         __syncthreads();
     }
-    float sum = shared_sum[0];
+    float exp_sum = shared_sum[0];
+    __syncthreads();
     
-    // Normalize
+    // Compute final softmax values
     for (int i = tid; i < size; i += blockDim.x) {
-        output[i] /= sum;
+        output[i] = expf(input[i] - max_val) / exp_sum;
     }
 }
 
@@ -99,13 +106,13 @@ __global__ void compute_hidden_layer_error(float *next_layer_errors, float *next
     }
 }
 
-__global__ void accumulate_gradients(float *weights, float *biases, float *errors, float *prev_activations, float *weights_grad, float *biases_grad, int layer_size, int prev_layer_size) {
+__global__ void accumulate_gradients(float *weights, float *biases, float *layer_errors, float *prev_layer_activations, float *weights_grad, float *biases_grad, int layer_size, int prev_layer_size) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < layer_size) {
-        atomicAdd(&biases_grad[i], errors[i]);
+        biases_grad[i] += layer_errors[i];
         for (int j = 0; j < prev_layer_size; j++) {
-            atomicAdd(&weights_grad[i * prev_layer_size + j], errors[i] * prev_activations[j]);
+            weights_grad[i * prev_layer_size + j] += layer_errors[i] * prev_layer_activations[j];
         }
     }
 }

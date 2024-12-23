@@ -124,7 +124,7 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
  * 
  * This function returns the loss contribution from this training example.
  */
- float neural_network_gradient_update(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label) {
+float neural_network_gradient_update(mnist_image_t * image, neural_network_t * network, neural_network_gradient_t * gradient, uint8_t label) {
     float *d_W1, *d_W2, *d_W3, *d_b1, *d_b2, *d_b3;
     float *d_input, *d_layer1_activations, *d_layer2_activations, *d_output_activations;
     float *d_layer2_errors, *d_layer1_errors, *d_output_errors;
@@ -161,14 +161,6 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     CHECK(cudaMalloc(&d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float)));
     CHECK(cudaMalloc(&d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float)));
 
-    // Initialize gradients to zero
-    CHECK(cudaMemset(d_W1_grad, 0, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float)));
-    CHECK(cudaMemset(d_W2_grad, 0, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float)));
-    CHECK(cudaMemset(d_W3_grad, 0, OUTPUT_LAYER_SIZE * HIDDEN_LAYER2_SIZE * sizeof(float)));
-    CHECK(cudaMemset(d_b1_grad, 0, HIDDEN_LAYER1_SIZE * sizeof(float)));
-    CHECK(cudaMemset(d_b2_grad, 0, HIDDEN_LAYER2_SIZE * sizeof(float)));
-    CHECK(cudaMemset(d_b3_grad, 0, OUTPUT_LAYER_SIZE * sizeof(float)));
-
     // Copy data to device
     CHECK(cudaMemcpy(d_W1, network->W1, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_W2, network->W2, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyHostToDevice));
@@ -198,41 +190,49 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
 
     matvec_mult<<<gridDim3, blockDim>>>(d_W3, d_layer2_activations, d_b3, d_output_activations, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
     cudaDeviceSynchronize();
+    CHECK(cudaGetLastError());
     softmax_activation<<<1, blockDim>>>(d_output_activations, d_output_activations, OUTPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
     // Copy output activations back to host
     CHECK(cudaMemcpy(output_activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
+        printf("output_activations[%d]: %f\n", i, output_activations[i]);
+    }
 
     // Backpropagation
+    // Output layer error
     compute_output_layer_error<<<gridDim3, blockDim>>>(d_output_activations, d_output_errors, label, OUTPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
+    // Hidden layer 2 error
     compute_hidden_layer_error<<<gridDim2, blockDim>>>(d_output_errors, d_W3, d_layer2_activations, d_layer2_errors, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
+    // Hidden layer 1 error
     compute_hidden_layer_error<<<gridDim1, blockDim>>>(d_layer2_errors, d_W2, d_layer1_activations, d_layer1_errors, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
-    // Accumulate gradients
+    // Accumulate gradients for output layer
     accumulate_gradients<<<gridDim3, blockDim>>>(d_W3, d_b3, d_output_errors, d_layer2_activations, d_W3_grad, d_b3_grad, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
+    // Accumulate gradients for hidden layer 2
     accumulate_gradients<<<gridDim2, blockDim>>>(d_W2, d_b2, d_layer2_errors, d_layer1_activations, d_W2_grad, d_b2_grad, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
+    // Accumulate gradients for hidden layer 1
     accumulate_gradients<<<gridDim1, blockDim>>>(d_W1, d_b1, d_layer1_errors, d_input, d_W1_grad, d_b1_grad, HIDDEN_LAYER1_SIZE, INPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
     CHECK(cudaGetLastError());
 
     // Copy gradients back to host
-<<<<<<< HEAD
     CHECK(cudaMemcpy(temp_grad.W1_grad, d_W1_grad, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(temp_grad.W2_grad, d_W2_grad, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(temp_grad.W3_grad, d_W3_grad, OUTPUT_LAYER_SIZE * HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
@@ -241,26 +241,13 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     CHECK(cudaMemcpy(temp_grad.b3_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     
     printf("Before: W1_grad[0][0]: %f\n", gradient->W1_grad[0][0]);
-=======
-    CHECK(cudaMemcpy(&temp_grad.W1_grad, d_W1_grad, HIDDEN_LAYER1_SIZE * INPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(&temp_grad.W2_grad, d_W2_grad, HIDDEN_LAYER2_SIZE * HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(&temp_grad.W3_grad, d_W3_grad, OUTPUT_LAYER_SIZE * HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(&temp_grad.b1_grad, d_b1_grad, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(&temp_grad.b2_grad, d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(&temp_grad.b3_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-
-    // Accumulate gradients properly
->>>>>>> b3a64741c95f740f18f08848100d95020285c4b7
     for (int i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         for (int j = 0; j < INPUT_LAYER_SIZE; j++) {
             gradient->W1_grad[i][j] += temp_grad.W1_grad[i][j];
         }
         gradient->b1_grad[i] += temp_grad.b1_grad[i];
     }
-<<<<<<< HEAD
     printf("After: W1_grad[0][0]: %f\n", gradient->W1_grad[0][0]);
-=======
->>>>>>> b3a64741c95f740f18f08848100d95020285c4b7
 
     for (int i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
         for (int j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
@@ -297,6 +284,7 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     CHECK(cudaFree(d_b2_grad));
     CHECK(cudaFree(d_b3_grad));
 
+    // Cross-entropy loss for the output
     return 0.0f - log(output_activations[label]);
 }
 
@@ -340,12 +328,6 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W3[i][j] -= learning_rate * gradient.W3_grad[i][j] / batch->size;
         }
     }
-
-    float grad_norm = 0.0f;
-    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        grad_norm += gradient.b3_grad[i] * gradient.b3_grad[i];
-    }
-    printf("Output gradient norm: %f\n", sqrt(grad_norm));
     
     return total_loss;
 }
