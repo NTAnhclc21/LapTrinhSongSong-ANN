@@ -206,7 +206,7 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
         layer1_errors[i] *= neural_network_relu_derivative(layer1_activations[i]);
     }
     end = clock();
-    error_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    error_time += ((double)(end - start)) / CLOCKS_PER_SEC;
 
     // Measure time for gradient calculation
     start = clock();
@@ -229,7 +229,7 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
         gradient->b1_grad[i] += layer1_errors[i];
     }
     end = clock();
-    gradient_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    gradient_time += ((double)(end - start)) / CLOCKS_PER_SEC;
 
     // Cross-entropy loss for the output
     return 0.0f - log(output_activations[label]);  // The "0.0f" convert the returned value from double to float (32-bit value)
@@ -243,6 +243,8 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
     float total_loss;
     int i, j;
 
+    clock_t start, end;
+
     // Zero initialise gradient for weights and bias vector
     memset(&gradient, 0, sizeof(neural_network_gradient_t));
 
@@ -255,6 +257,7 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
     }
 
     // Update weights and biases
+    start = clock();
     for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         network->b1[i] -= learning_rate * gradient.b1_grad[i] / batch->size;
         for (j = 0; j < INPUT_LAYER_SIZE; j++) {
@@ -275,6 +278,8 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W3[i][j] -= learning_rate * gradient.W3_grad[i][j] / batch->size;
         }
     }
+    end = clock();
+    update_time += ((double)(end - start)) / CLOCKS_PER_SEC;
 
     return total_loss;
 }

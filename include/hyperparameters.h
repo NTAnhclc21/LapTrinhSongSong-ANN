@@ -23,5 +23,7 @@ extern double relu_time;
 extern double softmax_time;
 extern double error_time;
 extern double gradient_time;
+extern double update_time;
+extern double training_time;
 
 #endif
