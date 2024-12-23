@@ -49,7 +49,7 @@ int main() {
     end = clock();
     training_time = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-    printf("Training completed.\n");
+    printf("Training completed.\n\n");
     printf("Time for activation calculation: %f seconds\n", activation_time);
     printf("Time for ReLU calculation: %f seconds\n", relu_time);
     printf("Time for softmax calculation: %f seconds\n", softmax_time);

@@ -39,6 +39,12 @@ __global__ void softmax_activation(float *input, float *output, int size) {
     __shared__ float shared_sum[32];
     
     int tid = threadIdx.x;
+
+    // Initialize shared memory
+    shared_max[tid] = -FLT_MAX;
+    shared_sum[tid] = 0.0f;
+    __syncthreads();
+
     float local_max = -FLT_MAX;
     
     // Find max value
@@ -50,9 +56,9 @@ __global__ void softmax_activation(float *input, float *output, int size) {
     
     // Reduce to find global max
     for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
-        if (tid < stride && tid + stride < blockDim.x) {
+        if (tid < stride) {
             shared_max[tid] = fmaxf(shared_max[tid], shared_max[tid + stride]);
-        }
+        }            
         __syncthreads();
     }
     float max_val = shared_max[0];
@@ -68,7 +74,7 @@ __global__ void softmax_activation(float *input, float *output, int size) {
     
     // Reduce to find total sum
     for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
-        if (tid < stride && tid + stride < blockDim.x) {
+        if (tid < stride) {
             shared_sum[tid] += shared_sum[tid + stride];
         }
         __syncthreads();

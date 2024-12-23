@@ -13,9 +13,9 @@
 #define HIDDEN_LAYER2_SIZE    64
 #define OUTPUT_LAYER_SIZE     10        // MNIST-fashion 10 labels
 
-#define BATCH_SIZE            32
+#define BATCH_SIZE            16
 #define LEARNING_RATE         0.5f
-#define STEPS                 1000      // GD version: Mini-batch Gradient Descent (batch/step)
+#define STEPS                 500       // GD version: Mini-batch Gradient Descent (batch/step)
 
 // Time measurement
 extern double activation_time;

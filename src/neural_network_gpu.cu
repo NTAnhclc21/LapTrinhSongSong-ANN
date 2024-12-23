@@ -86,14 +86,20 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     dim3 gridDim3((OUTPUT_LAYER_SIZE + blockDim.x - 1) / blockDim.x);
 
     matvec_mult<<<gridDim1, blockDim>>>(d_W1, d_input, d_b1, d_layer1_activations, HIDDEN_LAYER1_SIZE, INPUT_LAYER_SIZE);
+    cudaDeviceSynchronize();
     relu_activation<<<gridDim1, blockDim>>>(d_layer1_activations, HIDDEN_LAYER1_SIZE);
+    cudaDeviceSynchronize();
 
     matvec_mult<<<gridDim2, blockDim>>>(d_W2, d_layer1_activations, d_b2, d_layer2_activations, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
+    cudaDeviceSynchronize();
     relu_activation<<<gridDim2, blockDim>>>(d_layer2_activations, HIDDEN_LAYER2_SIZE);
+    cudaDeviceSynchronize();
 
     matvec_mult<<<gridDim3, blockDim>>>(d_W3, d_layer2_activations, d_b3, d_output_activations, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
+    cudaDeviceSynchronize();
     softmax_activation<<<1, blockDim>>>(d_output_activations, d_output_activations, OUTPUT_LAYER_SIZE);
-
+    cudaDeviceSynchronize();
+    
     // Copy results back to host
     cudaMemcpy(activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
