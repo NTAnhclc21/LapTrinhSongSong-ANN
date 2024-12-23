@@ -325,6 +325,12 @@ float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * n
             network->W3[i][j] -= learning_rate * gradient.W3_grad[i][j] / batch->size;
         }
     }
+
+    float grad_norm = 0.0f;
+    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
+        grad_norm += gradient.b3_grad[i] * gradient.b3_grad[i];
+    }
+    printf("Output gradient norm: %f\n", sqrt(grad_norm));
     
     return total_loss;
 }
