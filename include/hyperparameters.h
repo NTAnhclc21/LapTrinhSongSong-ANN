@@ -14,7 +14,7 @@
 #define OUTPUT_LAYER_SIZE     10        // MNIST-fashion 10 labels
 
 #define BATCH_SIZE            16
-#define LEARNING_RATE         0.5f
+#define LEARNING_RATE         0.01f
 #define STEPS                 500       // GD version: Mini-batch Gradient Descent (batch/step)
 
 // Time measurement
