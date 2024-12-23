@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+double activation_time = 0.0;
+double relu_time = 0.0;
+double softmax_time = 0.0;
+double error_time = 0.0;
+double gradient_time = 0.0;
+
+
 int main() {
 
     // Initialize variables
@@ -35,6 +43,11 @@ int main() {
     }
 
     printf("Training completed.\n");
+    printf("Time for activation calculation: %f seconds\n", activation_time);
+    printf("Time for ReLU calculation: %f seconds\n", relu_time);
+    printf("Time for softmax calculation: %f seconds\n", softmax_time);
+    printf("Time for error calculation: %f seconds\n", error_time);
+    printf("Time for gradient calculation: %f seconds\n", gradient_time);
 
     // Cleanup
     mnist_free_dataset(train_dataset);

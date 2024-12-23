@@ -12,6 +12,8 @@
  */
 
 #include <math.h>
+#include <stdint.h>
+#include <float.h>
 
 // CUDA Kernel: Matrix-Vector Multiplication
 __global__ void matvec_mult(float *W, float *x, float *b, float *out, int rows, int cols) {
@@ -33,24 +35,49 @@ __global__ void relu_activation(float *input, int size) {
 
 // CUDA Kernel: Softmax Activation
 __global__ void softmax_activation(float *input, float *output, int size) {
-    __shared__ float sum;
-    float max_val = -FLT_MAX;
-
+    __shared__ float shared_max[32];
+    __shared__ float shared_sum[32];
+    
+    int tid = threadIdx.x;
+    float local_max = -FLT_MAX;
+    
     // Find max value
-    for (int i = threadIdx.x; i < size; i += blockDim.x) {
-        max_val = fmaxf(max_val, input[i]);
+    for (int i = tid; i < size; i += blockDim.x) {
+        local_max = fmaxf(local_max, input[i]);
     }
-
+    shared_max[tid] = local_max;
     __syncthreads();
-
-    float exp_sum = 0.0f;
-    for (int i = threadIdx.x; i < size; i += blockDim.x) {
-        exp_sum += expf(input[i] - max_val);
+    
+    // Reduce to find global max
+    for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
+        if (tid < stride && tid + stride < blockDim.x) {
+            shared_max[tid] = fmaxf(shared_max[tid], shared_max[tid + stride]);
+        }
+        __syncthreads();
     }
-
+    float max_val = shared_max[0];
     __syncthreads();
-
-    for (int i = threadIdx.x; i < size; i += blockDim.x) {
+    
+    // Compute sum of exponentials
+    float local_sum = 0.0f;
+    for (int i = tid; i < size; i += blockDim.x) {
+        local_sum += expf(input[i] - max_val);
+    }
+    shared_sum[tid] = local_sum;
+    __syncthreads();
+    
+    // Reduce to find total sum
+    for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
+        if (tid < stride && tid + stride < blockDim.x) {
+            shared_sum[tid] += shared_sum[tid + stride];
+        }
+        __syncthreads();
+    }
+    float exp_sum = shared_sum[0];
+    __syncthreads();
+    
+    // Compute final softmax values
+    for (int i = tid; i < size; i += blockDim.x) {
         output[i] = expf(input[i] - max_val) / exp_sum;
     }
 }

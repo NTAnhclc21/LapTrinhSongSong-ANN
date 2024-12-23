@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include <stdio.h>
 
 #include "mnist_file.h"
 #include "neural_network.h"
@@ -131,51 +133,64 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     float output_errors[OUTPUT_LAYER_SIZE];
     int i, j;
 
+    clock_t start, end;
+
     // Forward pass (similar to hypothesis function)
+    start = clock();
     for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         layer1_activations[i] = network->b1[i];
         for (j = 0; j < INPUT_LAYER_SIZE; j++) {
             layer1_activations[i] += network->W1[i][j] * PIXEL_SCALE(image->pixels[j]);
         }
+    }
+    end = clock();
+    activation_time += ((double) (end - start)) / CLOCKS_PER_SEC;
+    start = clock();
+    for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         layer1_activations[i] = neural_network_relu(layer1_activations[i]);
     }
+    end = clock();
+    relu_time += ((double) (end - start)) / CLOCKS_PER_SEC;
 
+    start = clock();
     for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
         layer2_activations[i] = network->b2[i];
         for (j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
             layer2_activations[i] += network->W2[i][j] * layer1_activations[j];
         }
+    }
+    end = clock();
+    activation_time += ((double) (end - start)) / CLOCKS_PER_SEC;
+    start = clock();
+    for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
         layer2_activations[i] = neural_network_relu(layer2_activations[i]);
     }
+    end = clock();
+    relu_time += ((double) (end - start)) / CLOCKS_PER_SEC;
 
+    start = clock();
     for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
         output_activations[i] = network->b3[i];
         for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
             output_activations[i] += network->W3[i][j] * layer2_activations[j];
         }
     }
-
+    end = clock();
+    activation_time += ((double) (end - start)) / CLOCKS_PER_SEC;
+    start = clock();
     neural_network_softmax(output_activations, OUTPUT_LAYER_SIZE);
+    end = clock();
+    softmax_time += ((double) (end - start)) / CLOCKS_PER_SEC;
 
-    // Backpropagation
-    // Output layer error
-    for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        output_errors[i] = (i == label) ? output_activations[i] - 1 : output_activations[i];
-    }
-
-    // Gradient calculation for output layer
     /**
      * When using softmax activation at the output layer with the cross-entropy loss,
      * the gradient computation simplifies.
      */
+    // Measure time for error calculation
+    start = clock();
     for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
-            gradient->W3_grad[i][j] += output_errors[i] * layer2_activations[j];
-        }
-        gradient->b3_grad[i] += output_errors[i];
+        output_errors[i] = (i == label) ? output_activations[i] - 1 : output_activations[i];
     }
-
-    // Second hidden layer error
     for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
         layer2_errors[i] = 0;
         for (j = 0; j < OUTPUT_LAYER_SIZE; j++) {
@@ -183,16 +198,6 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
         }
         layer2_errors[i] *= neural_network_relu_derivative(layer2_activations[i]);
     }
-
-    // Second hidden layer gradient
-    for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
-        for (j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
-            gradient->W2_grad[i][j] += layer2_errors[i] * layer1_activations[j];
-        }
-        gradient->b2_grad[i] += layer2_errors[i];
-    }
-
-    // First hidden layer error
     for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         layer1_errors[i] = 0;
         for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
@@ -200,14 +205,31 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
         }
         layer1_errors[i] *= neural_network_relu_derivative(layer1_activations[i]);
     }
+    end = clock();
+    error_time = ((double)(end - start)) / CLOCKS_PER_SEC;
 
-    // First hidden layer gradient
+    // Measure time for gradient calculation
+    start = clock();
+    for (i = 0; i < OUTPUT_LAYER_SIZE; i++) {
+        for (j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
+            gradient->W3_grad[i][j] += output_errors[i] * layer2_activations[j];
+        }
+        gradient->b3_grad[i] += output_errors[i];
+    }
+    for (i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
+        for (j = 0; j < HIDDEN_LAYER1_SIZE; j++) {
+            gradient->W2_grad[i][j] += layer2_errors[i] * layer1_activations[j];
+        }
+        gradient->b2_grad[i] += layer2_errors[i];
+    }
     for (i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
         for (j = 0; j < INPUT_LAYER_SIZE; j++) {
             gradient->W1_grad[i][j] += layer1_errors[i] * PIXEL_SCALE(image->pixels[j]);
         }
         gradient->b1_grad[i] += layer1_errors[i];
     }
+    end = clock();
+    gradient_time = ((double)(end - start)) / CLOCKS_PER_SEC;
 
     // Cross-entropy loss for the output
     return 0.0f - log(output_activations[label]);  // The "0.0f" convert the returned value from double to float (32-bit value)

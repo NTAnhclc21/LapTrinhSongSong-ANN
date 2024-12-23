@@ -17,4 +17,11 @@
 #define LEARNING_RATE         0.5f
 #define STEPS                 1000      // GD version: Mini-batch Gradient Descent (batch/step)
 
+// Time measurement
+extern double activation_time;
+extern double relu_time;
+extern double softmax_time;
+extern double error_time;
+extern double gradient_time;
+
 #endif
