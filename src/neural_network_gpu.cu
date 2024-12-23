@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "mnist_file.h"
 #include "neural_network.h"
@@ -99,7 +100,7 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     cudaDeviceSynchronize();
     softmax_activation<<<1, blockDim>>>(d_output_activations, d_output_activations, OUTPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
-    
+
     // Copy results back to host
     cudaMemcpy(activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -127,6 +128,9 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     float *d_input, *d_layer1_activations, *d_layer2_activations, *d_output_activations;
     float *d_layer2_errors, *d_layer1_errors, *d_output_errors;
     float *d_W1_grad, *d_W2_grad, *d_W3_grad, *d_b1_grad, *d_b2_grad, *d_b3_grad;
+    float output_activations[OUTPUT_LAYER_SIZE];
+
+    clock_t start, end;
 
     // Scale input pixels
     float scaled_pixels[INPUT_LAYER_SIZE];
@@ -190,15 +194,6 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
 
     // Backpropagation
     // Output layer error
-    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        output_errors[i] = (i == label) ? output_activations[i] - 1 : output_activations[i];
-    }
-
-    // Copy output errors to device
-    cudaMemcpy(d_output_errors, output_errors, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Backpropagation
-    // Output layer error
     compute_output_layer_error<<<gridDim3, blockDim>>>(d_output_activations, d_output_errors, label, OUTPUT_LAYER_SIZE);
     cudaDeviceSynchronize();
 
@@ -258,7 +253,7 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
 /**
  * Run one step of gradient descent and update the neural network. Return the total loss (sum of loss)
  */
-float neural_network_training_step(mnist_dataset_t * dataset, neural_network_t * network, float learning_rate) {
+float neural_network_training_step(mnist_dataset_t * batch, neural_network_t * network, float learning_rate) {
     float total_loss = 0.0f;
     int i, j;
 
@@ -270,8 +265,8 @@ float neural_network_training_step(mnist_dataset_t * dataset, neural_network_t *
      * Calculate the Gradients and the Cross-Entropy Loss by looping through the training set.
      * The returned gradient is the sum of gradients from all inputs, not the average.
      */
-    for (i = 0; i < dataset->size; i++) {
-        total_loss += neural_network_gradient_update_gpu_v0(&dataset->images[i], network, &gradient, dataset->labels[i]);
+    for (i = 0; i < batch->size; i++) {
+        total_loss += neural_network_gradient_update(&batch->images[i], network, &gradient, batch->labels[i]);
     }
 
     // Update weights and biases

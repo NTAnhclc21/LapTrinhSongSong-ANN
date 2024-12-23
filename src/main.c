@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-
+// Global variable definitions
 double activation_time = 0.0;
 double relu_time = 0.0;
 double softmax_time = 0.0;
