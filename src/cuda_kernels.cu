@@ -35,8 +35,8 @@ __global__ void relu_activation(float *input, int size) {
 
 // CUDA Kernel: Softmax Activation
 __global__ void softmax_activation(float *input, float *output, int size) {
-    __shared__ float shared_max[32];
-    __shared__ float shared_sum[32];
+    __shared__ float shared_max[128];
+    __shared__ float shared_sum[128];
     
     int tid = threadIdx.x;
 
