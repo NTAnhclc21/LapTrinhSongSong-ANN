@@ -118,11 +118,6 @@ void neural_network_hypothesis(mnist_image_t * image, neural_network_t * network
     CHECK(cudaFree(d_output_activations));
 }
 
-// ReLU Derivative (for backpropagation)
-float neural_network_relu_derivative(float x) {
-    return x > 0 ? 1.0f : 0.0f;
-}
-
 /**
  * Update the gradients for this step of gradient descent using the gradient
  * contributions from a single training example (image).
@@ -135,11 +130,6 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     float *d_layer2_errors, *d_layer1_errors, *d_output_errors;
     float *d_W1_grad, *d_W2_grad, *d_W3_grad, *d_b1_grad, *d_b2_grad, *d_b3_grad;
     
-    float layer1_activations[HIDDEN_LAYER1_SIZE];
-    float layer2_activations[HIDDEN_LAYER2_SIZE];
-    float output_activations[OUTPUT_LAYER_SIZE];
-    float layer1_errors[HIDDEN_LAYER1_SIZE];
-    float layer2_errors[HIDDEN_LAYER2_SIZE];
     float output_errors[OUTPUT_LAYER_SIZE];
 
     // Scale input pixels
@@ -211,47 +201,22 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
 
     // Copy output activations back to host
     CHECK(cudaMemcpy(output_activations, d_output_activations, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(layer2_activations, d_layer2_activation2, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(layer1_activations, d_layer1_activation1, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
 
     // Backpropagation
+    // Output layer error
+    compute_output_layer_error<<<gridDim3, blockDim>>>(d_output_activations, d_output_errors, label, OUTPUT_LAYER_SIZE);
+    cudaDeviceSynchronize();
+    CHECK(cudaGetLastError());
 
+    // Hidden layer 2 error
+    compute_hidden_layer_error<<<gridDim2, blockDim>>>(d_output_errors, d_W3, d_layer2_activations, d_layer2_errors, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
+    cudaDeviceSynchronize();
+    CHECK(cudaGetLastError());
 
-    for (int i = 0; i < OUTPUT_LAYER_SIZE; i++) {
-        output_errors[i] = (i == label) ? output_activations[i] - 1 : output_activations[i];
-    }
-    for (int i = 0; i < HIDDEN_LAYER2_SIZE; i++) {
-        layer2_errors[i] = 0;
-        for (int j = 0; j < OUTPUT_LAYER_SIZE; j++) {
-            layer2_errors[i] += output_errors[j] * network->W3[j][i];
-        }
-        layer2_errors[i] *= neural_network_relu_derivative(layer2_activations[i]);
-    }
-    for (int i = 0; i < HIDDEN_LAYER1_SIZE; i++) {
-        layer1_errors[i] = 0;
-        for (int j = 0; j < HIDDEN_LAYER2_SIZE; j++) {
-            layer1_errors[i] += layer2_errors[j] * network->W2[j][i];
-        }
-        layer1_errors[i] *= neural_network_relu_derivative(layer1_activations[i]);
-    }
-    CHECK(cudaMemcpy(d_output_errors, output_errors, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_layer2_errors, layer2_errors, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_layer1_errors, layer1_errors, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyHostToDevice));
-
-    // // Output layer error
-    // compute_output_layer_error<<<gridDim3, blockDim>>>(d_output_activations, d_output_errors, label, OUTPUT_LAYER_SIZE);
-    // cudaDeviceSynchronize();
-    // CHECK(cudaGetLastError());
-
-    // // Hidden layer 2 error
-    // compute_hidden_layer_error<<<gridDim2, blockDim>>>(d_output_errors, d_W3, d_layer2_activations, d_layer2_errors, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
-    // cudaDeviceSynchronize();
-    // CHECK(cudaGetLastError());
-
-    // // Hidden layer 1 error
-    // compute_hidden_layer_error<<<gridDim1, blockDim>>>(d_layer2_errors, d_W2, d_layer1_activations, d_layer1_errors, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
-    // cudaDeviceSynchronize();
-    // CHECK(cudaGetLastError());
+    // Hidden layer 1 error
+    compute_hidden_layer_error<<<gridDim1, blockDim>>>(d_layer2_errors, d_W2, d_layer1_activations, d_layer1_errors, HIDDEN_LAYER2_SIZE, HIDDEN_LAYER1_SIZE);
+    cudaDeviceSynchronize();
+    CHECK(cudaGetLastError());
 
     // Accumulate gradients for output layer
     accumulate_gradients<<<gridDim3, blockDim>>>(d_W3, d_b3, d_output_errors, d_layer2_activations, d_W3_grad, d_b3_grad, OUTPUT_LAYER_SIZE, HIDDEN_LAYER2_SIZE);
@@ -275,7 +240,7 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     CHECK(cudaMemcpy(gradient->b1_grad, d_b1_grad, HIDDEN_LAYER1_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(gradient->b2_grad, d_b2_grad, HIDDEN_LAYER2_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(gradient->b3_grad, d_b3_grad, OUTPUT_LAYER_SIZE * sizeof(float), cudaMemcpyDeviceToHost));
-    
+
     // Free device memory
     CHECK(cudaFree(d_W1));
     CHECK(cudaFree(d_W2));

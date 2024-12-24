@@ -10,11 +10,11 @@
 // Hyperparameter definitions
 #define INPUT_LAYER_SIZE      784       // MNIST-fashionfashion 28x28 image
 #define HIDDEN_LAYER1_SIZE    128
-#define HIDDEN_LAYER2_SIZE    64
+#define HIDDEN_LAYER2_SIZE    128       // 2 hidden layers
 #define OUTPUT_LAYER_SIZE     10        // MNIST-fashion 10 labels
 
-#define BATCH_SIZE            16
-#define LEARNING_RATE         0.01f
+#define BATCH_SIZE            32
+#define LEARNING_RATE         0.5f
 #define STEPS                 500       // GD version: Mini-batch Gradient Descent (batch/step)
 
 // Time measurement
