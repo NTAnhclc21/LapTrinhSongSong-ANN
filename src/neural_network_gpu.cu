@@ -130,7 +130,7 @@ float neural_network_gradient_update(mnist_image_t * image, neural_network_t * n
     float *d_layer2_errors, *d_layer1_errors, *d_output_errors;
     float *d_W1_grad, *d_W2_grad, *d_W3_grad, *d_b1_grad, *d_b2_grad, *d_b3_grad;
     
-    float output_errors[OUTPUT_LAYER_SIZE];
+    float output_activations[OUTPUT_LAYER_SIZE];
 
     // Scale input pixels
     float scaled_pixels[INPUT_LAYER_SIZE];
