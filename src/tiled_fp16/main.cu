@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cuda_runtime.h>
-#include <cuda_fp16.h>
 #include <time.h>
 #include <string.h>
+
+#include <cuda_fp16.h>
+
 #include "neural_network.h"
 #include "mnist_file.h"
 #include "hyperparameters.h"

@@ -81,4 +81,14 @@ __global__ void accumulate_gradients(float *weights,
                                    int layer_size, 
                                    int prev_layer_size);
 
+
+
+/**
+ * Functions will be defined in the following files:
+ * - src/restrict/cuda_kernels.cu
+ */
+__global__ void optimizedKernel(float* __restrict__ d_input, float* __restrict__ d_output, 
+                                 int numChannels, int width, int height);
+
+
 #endif // CUDA_KERNELS_H

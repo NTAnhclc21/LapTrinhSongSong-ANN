@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <float.h>
 
+#include "cuda_kernels.h"
+
 // CUDA Kernel: Matrix-Vector Multiplication
 __global__ void matvec_mult(float *W, float *x, float *b, float *out, int rows, int cols) {
     int row = blockIdx.x * blockDim.x + threadIdx.x;

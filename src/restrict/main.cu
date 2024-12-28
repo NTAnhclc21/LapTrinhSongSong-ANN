@@ -1,13 +1,13 @@
 #include "neural_network.h"
 #include "mnist_file.h"
 #include "hyperparameters.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 #include <float.h>
-#include <cuda_runtime.h>
 
 #define BLOCK_SIZE 16
 #define NUM_CHANNELS 1
@@ -20,26 +20,6 @@
 double reduction_time = 0.0;
 double activation_time = 0.0;
 double training_time = 0.0;
-
-// Kernel restrict and loop unrolling
-__global__ void optimizedKernel(float* __restrict__ d_input, float* __restrict__ d_output, 
-                                 int numChannels, int width, int height) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int idy = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (idx >= width || idy >= height) return;
-
-    float result = 0.0f;
-
-    // Unrolling loop
-    for (int i = 0; i < 4; i++) {
-        if (idx + i < width && idy + i < height) {
-            result += d_input[(idy + i) * width + (idx + i)];
-        }
-    }
-
-    d_output[idy * width + idx] = result;
-}
 
 // Tune and Train
 void tuneAndTrain(mnist_dataset_t *train_dataset, mnist_dataset_t *test_dataset, neural_network_t *network) {

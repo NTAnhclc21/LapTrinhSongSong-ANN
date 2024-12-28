@@ -17,34 +17,6 @@
 
 #include "cuda_kernels.h"
 
-
-// ----------- Optimized Kernel: Restrict and Loop Unrolling -------------------
-
-
-// Kernel restrict and loop unrolling
-__global__ void optimizedKernel(float* __restrict__ d_input, float* __restrict__ d_output, 
-                                 int numChannels, int width, int height) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int idy = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    if (idx >= width || idy >= height) return;
-
-    float result = 0.0f;
-
-    // Unrolling loop
-    for (int i = 0; i < 4; i++) {
-        if (idx + i < width && idy + i < height) {
-            result += d_input[(idy + i) * width + (idx + i)];
-        }
-    }
-
-    d_output[idy * width + idx] = result;
-}
-
-
-// ----------------------------------------------------------------------------
-
-
 // CUDA Kernel: Matrix-Vector Multiplication
 __global__ void matvec_mult(float *W, float *x, float *b, float *out, int rows, int cols) {
     int row = blockIdx.x * blockDim.x + threadIdx.x;
