@@ -1,4 +1,4 @@
-# Final Project: Optimized Traditional ANN with CUDA - Parallel Programming 21KHMT - FITUS
+# Final Project: Optimized Traditional ANN with CUDA - Parallel Programming - FITUS
 This project involves implementing a simple Artificial Neural Network (ANN) focusing on CUDA's capabilities for optimization in parallel computing.
 
 ## Implementation
@@ -38,6 +38,10 @@ Finally, you can remove your compiled binaries with:
 ```bash
 make clean
 ```
+
+## Watch a Video
+
+Watch this [video](https://youtu.be/OgsnsudoaZU?si=hKOdXyLBExCXcUAL) to see how we run the code in Google Colab.
 
 ## References
 - [A neural network implementation for the MNIST dataset, written in plain C](https://github.com/AndrewCarterUK/mnist-neural-network-plain-c.git), by AndrewCarterUK
