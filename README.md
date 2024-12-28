@@ -1,4 +1,4 @@
-# FITUS - Parallel Programming 21KHMT - Final Project
+# Final Project: Optimized Traditional ANN with CUDA - Parallel Programming 21KHMT - FITUS
 This project involves implementing a simple Artificial Neural Network (ANN) focusing on CUDA's capabilities for optimization in parallel computing.
 
 ## Implementation
@@ -7,11 +7,15 @@ The ANN is developed using plain C for the sequential version and CUDA C for the
 
 The implemented versions:
 - `sequential` : 
-  - Version name: 
+  - Version name: `main_cpu`
 - `basic_parallel` :
+  - Version name: `main_gpu_v0`
 - `tiled` : 
+  - Version name: `main_gpu_v1`
 - `tiled_fp16` :
+  - Version name: `main_gpu_v2`
 - `restrict` :
+  - Version name: `main_gpu_v3`
 
 ## How to Run Makefile
 
